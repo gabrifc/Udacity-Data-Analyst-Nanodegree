@@ -1,0 +1,5 @@
+In this project I used the Mapzen pre-bundled OSM extract, which covers  the Barcelona Metropolitan Area because that's where I live.
+
+URLs
+(https://mapzen.com/data/metro-extracts)
+(https://s3.amazonaws.com/metro-extracts.mapzen.com/barcelona_spain.osm.bz2)

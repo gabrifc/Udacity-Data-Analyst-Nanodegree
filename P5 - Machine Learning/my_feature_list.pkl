@@ -1,0 +1,14 @@
+(lp0
+S'poi'
+p1
+aS'proportion_long_term_incentive'
+p2
+aS'from_messages'
+p3
+aS'bonus'
+p4
+aS'proportion_received_from_poi'
+p5
+aS'sharing_importance'
+p6
+a.

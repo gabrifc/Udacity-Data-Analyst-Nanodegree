@@ -1,0 +1,207 @@
+/* main.css */
+/* General */
+* {
+	box-sizing: border-box;
+}
+/* Text */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+header {
+  border-bottom: 1px solid #eaeaea;
+}
+h1, h2, h3 {
+  text-align: center;
+}
+h3 {
+  margin: 20px 0 0 0;
+  padding: 0;
+  font-size: 10px;
+}
+#text-story {
+  font-weight: 300;
+  line-height: 1.2em;
+  font-size: 12px;
+  padding: 20px 20px 0 20px;
+  width: 100%;
+  max-width: 35em;
+  margin: 0 auto;
+}
+p {
+  width: 100%;
+  margin: 0 auto;
+}
+.text {
+  height: 165px;
+}
+dfn {
+  border-bottom: dashed 1px #333;
+  cursor: help;  
+}
+a,
+a:visited {
+  color: #333;
+}
+
+/* Buttons */
+.nav {
+  list-style: none;
+  width: 100%;
+  margin: 0 auto;
+}
+.nav li a {
+  display: block;
+  float: left;
+  line-height: 3.5em;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  color: #333;
+  text-decoration: none;
+}
+.back {
+  display: none !important;
+}
+.next {
+  width: 100%;
+}
+.finished {
+  width: 0;
+}
+.next--active,
+.back--active {
+  width: 50%;
+}
+.next:before,
+.next--active:before, 
+.back--active:before {
+  color: #888;
+  font-family: FontAwesome;
+  position:relative;
+}
+.next:before,
+.next--active:before {
+  content: '\f054';
+  left:6em;
+}
+.next:hover:before,
+.next--active:hover:before {
+  left:6.5em;
+}
+.back--active:before {
+  content: '\f053';
+  right:3.5em;
+}
+.back--active:hover:before {
+  right:4em;
+}
+/* Viz */
+#viz {
+  display: inline-block;
+  width: 100%;
+}
+#viz svg {
+  width: 100%;
+  height: 100%;  
+}
+.x path {
+  display: none;
+}
+#viz text {
+  font-weight: 300;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #333;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+}
+.verticalBarRect,
+.horizontalBarRect {
+  fill: #dadada;
+}
+.combinedBar:hover .pubmedTimelineBar {
+  fill: steelBlue;
+}
+.combinedBar:hover .retTimelineBar {
+  fill: darkRed;
+}
+.pubmedTimelineBar:hover {
+  fill: steelBlue;
+}
+.retTimelineBar:hover {
+  fill: darkRed;
+}
+.topRetractions {
+  cursor: pointer;
+}
+
+.verticalBarValue,
+.horizontalBarText,
+.horizontalBarValue {
+  fill: #333;
+}
+.verticalBar:hover .verticalBarValue,
+.horizontalBar:hover .horizontalBarValue {
+  fill: #f1f1f1;
+}
+
+/* Tooltips */
+.d3-tip {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #f1f1f1;
+  border-radius: 2px;
+}
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+.arc {
+  fill: none;
+  stroke: #eaeaea;
+  stroke-width: 1;
+}
+.arc:hover {
+  stroke: darkRed;
+  stroke-width: 2px;
+  cursor:pointer;
+  z-index: 100;
+}
+
+#arcInfo {
+  max-width: 35em;
+  margin: 0 auto;
+}
+
+@media screen and (min-width: 320px) {
+  h3,
+  #text-story {
+    font-size: calc(12px + 7 * ((100vw - 320px) / 960));
+    line-height: calc(1.2em + 0.4 * ((100vw - 20em) / 60));
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  h3,
+  #text-story {
+    font-size: 18px;
+    line-height: 1.5em;
+  }
+}

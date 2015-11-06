@@ -1,0 +1,18 @@
+BMI, Cholesterol, GDP(PPP) and Cancer Datasets
+
+Description
+
+The datasets contain information for the specified parameters from different world countries, downloaded from the Gapminder website (see http://www.gapminder.org/data/)
+
+Details
+- BMI Data
+Estimated BMI from the different countries in the 1980 to 2008 period.
+
+- Cholesterol
+Estimated mmol/L Total Cholesterol in blood from different countries from the period 1980 to 2008.
+
+- GDP (PPP)
+GDP(PPP) estimate of the different countries for the period 1980 to 2008.
+
+- Cancer Datasets
+Male and female cancer incidence of different types of cancer per 100,000 habitants at different countries for the year 2002. 

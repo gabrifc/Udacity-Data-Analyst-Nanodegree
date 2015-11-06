@@ -1,0 +1,6 @@
+http://blog.datacamp.com/15-easy-solutions-data-frame-problems-r/
+https://stackoverflow.com/questions/29907053/plot-colour-coded-world-map-using-ggplot2
+http://www.milanor.net/blog/?p=534
+http://rmarkdown.rstudio.com/authoring_basics.html
+https://stackoverflow.com/questions/5510966/create-a-variable-name-with-paste-in-r
+rworldmap & ggplot documentation.

@@ -1,0 +1,1402 @@
+---
+title: "BMI, Diet & Cancer Data Exploration"
+author: "Gabriel Forn Cuní"
+date: "25th September 2015"
+output: 
+  html_document:
+    theme: cosmo
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages and defaults that well be used.
+
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(grid)
+library(gridExtra)
+library(countrycode)
+library(RColorBrewer)
+library(rworldmap)
+
+# Knittr defaults
+knitr::opts_chunk$set(cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE)
+
+# Global defaults
+options(stringsAsFactors = FALSE)
+
+# Plot defaults
+theme_set(theme_minimal())
+
+# rworldmap frame
+par(mai=c(0,0,0.2,0),xaxs="i",yaxs="i")
+```
+
+# 0. Introduction
+
+Obesity is a major risk factor for a number of chronic diseases, including 
+diabetes mellitus, cardiovascular diseases, and cancer, and according to the 
+World Health Organization, it has become a health challenge of epidemic 
+proportions in the last few decades in the western and westernized societies.
+
+Although highly criticized, the principal method for determining obesity in 
+adults is through the Body Mass Index (BMI). BMI classification is as follows 
+(from the [CDC](http://www.cdc.gov/obesity/adult/defining.html)):
+
+Category |   Underweight  |    Healthy   |  Overweight  |    Obese
+-------- | -------------- | ------------ | ------------ | ------------
+  BMI    | Less than 18.5 | 18.5 to 24.9 | 25.0 to 29.9 | More than 30
+
+In this project, I will analyze the relationship between nutritional behaviours 
+(BMI & blood cholesterol levels) on worldwide populations and certain types of 
+Cancer using information available in the Gapminder website 
+(see <http://www.gapminder.org/data/>).
+
+# 1. Worldwide BMI Exploration
+
+I'll start exploring how the BMI dataset is structured and distributed.
+
+```{r Load_the_data}
+# Read the original data files
+maleBMI <- read.csv("Indicator_BMI male ASM.csv", sep = ';')
+femaleBMI <- read.csv('Indicator_BMI female ASM.csv', sep = ';')
+```
+
+## 1.1. Dataset structure
+
+```{r BMI_structure}
+str(maleBMI)
+```
+
+My dataset is structured in wide format. It contains data for 199 countries. 
+The first column contains the name of the country and the rest values for the 
+estimated average BMI in the country from the years 1980 to 2008. Male and 
+female datasets are separated.
+
+## 1.2. Dataset distribution
+
+Let's take a grasp on the data and start analyzing the how the BMI is dispersed 
+worldwide at the most recent time point available (2008), for males and females.
+
+```{r echo = TRUE, BMI_summary}
+summary(maleBMI$X2008)
+summary(femaleBMI$X2008)
+```
+
+It seems that females have a slightly higher BMI than males. Let's plot the 
+values as histograms.
+
+```{r BMI_histograms}
+plotMaleBMI <- ggplot(aes(x = X2008), data = maleBMI) +
+  geom_histogram(binwidth = 0.25, color = '#ffffff', fill = '#333333') +
+  xlab('Male BMI in 2008') +
+  ylab('Number of Countries') +
+  scale_x_continuous(limits = c(18,36), breaks = seq(18,36,1))
+plotFemaleBMI <- ggplot(aes(x = X2008), data = femaleBMI) +
+  geom_histogram(binwidth = 0.25, color = '#ffffff', fill = '#333333') +
+  xlab('Female BMI in 2008') +
+  ylab('Number of Countries') +
+  scale_x_continuous(limits = c(18,36), breaks = seq(18,36,1))
+grid.arrange(plotMaleBMI, plotFemaleBMI, ncol = 1)
+```
+
+The data distribution is very roughly normal, but the discreteness and the low 
+number of points alter this pattern. I can see how there are a few more BMI 
+values above 28 in the females plot. This information will be more evident using
+boxplots.
+
+```{r BMI_boxplots}
+ggplot(aes(y = X2008, x = 'Males'), data = maleBMI) +
+  geom_boxplot() + 
+  geom_boxplot(aes(y = X2008, x = 'Females'), data = femaleBMI) +
+  xlab('Worlwide BMI in 2008') +
+  ylab('Number of Countries')
+```
+
+The boxplots confirm visually that generally **women have a slighter higher BMI 
+than men** in this dataset. I wonder if this disparity has always existed. 
+I can study how the BMI has evolved through the years 1980 to 2008. 
+
+However, to do so I'll have to convert the data from wide format to long format.
+
+## 1.3. BMI data reshape
+
+```{r echo = TRUE, BMI_reshape}
+# Add the gender column that we'll use later
+maleBMI$Gender <- 'M'
+femaleBMI$Gender <- 'F'
+
+# Convert the data from wide to long format
+maleBMI_long <- melt(maleBMI,
+                     id.vars = c('Country', 'Gender'),
+                     variable.name = 'Year',
+                     value.name = 'BMI')
+femaleBMI_long <- melt(femaleBMI,
+                     id.vars = c('Country', 'Gender'),
+                     variable.name = 'Year',
+                     value.name = 'BMI')
+
+# And merge male and female data.
+healthData <- rbind(maleBMI_long, femaleBMI_long)
+
+# Little quality of life improvements
+healthData$Gender <- factor(healthData$Gender)
+healthData$Year <- factor(healthData$Year, 
+                          labels = c(1980:2008))
+```
+
+```{r BMI_housekeeping}
+# Housekeeping, don't mind me
+rm(list = ls(pattern = "^male"))
+rm(list = ls(pattern = "^female"))
+rm(list = ls(pattern = "^plot"))
+```
+
+Let's see how the dataset structure is now.
+
+```{r BMI_long_structure}
+str(healthData)
+```
+
+The new dataset contains 11542 observations (199 Countries, 2 Genders, 29 time 
+points) of 3 variables: Country, Gender and Year of the BMI observation.
+
+## 1.4. BMI evolution in the last decades
+
+I can now use a scatterplot to see how the BMI has evolved worldwide since the 
+80s to the 2008.
+
+```{r BMI_evolution}
+ggplot(aes(x = Year, y = BMI), data = healthData) +
+  geom_point() +
+  xlab('Year') +
+  ylab('BMI in world countries') +
+  scale_x_discrete(breaks = seq(1980,2008,2))
+```
+
+It seems that worlwide BMI it's increasing. Is men and women BMI increasing at 
+the same ratio?
+
+```{r BMI_gender_evolution}
+ggplot(aes(x = Year, y = BMI), data = healthData) +
+  geom_jitter(aes(pch = Gender), alpha = 1/10, color = '#cccccc') +
+  geom_smooth(aes(group = Gender, color = Gender)) +
+  scale_x_discrete(breaks = seq(1980,2008,2))
+```
+
+From this data, we can conclude that **from 1980 onwards the female BMI has 
+been higher than the male BMI and both are increasing at a similar ratio 
+worldwide.**
+
+## 1.5. Categorical BMI classification
+
+This data is *worrying*, because a lot of observations are above the BMI 
+treshold for overweight, and a few points are above obesity treshold. This means
+that the majority of population from some countries is obese. I'll add a 
+category to the data to make obvious this fact.
+
+```{r echo = TRUE, BMI_Classification}
+healthData$BMIClassification <- cut(healthData$BMI, 
+  breaks = c(0,18.5,25,30,50),
+  labels = c('Underweight', 'Healthy', 'Overweight', 'Obese'))
+```
+
+And plot the data using different colors for this new classification.
+
+```{r BMI_gender_evolution_limits}
+ggplot(aes(x = Year, y = BMI, color = BMIClassification, pch = Gender), 
+       data = healthData) +
+  geom_jitter(alpha = 1) +
+  scale_x_discrete(breaks = seq(1980,2008,2)) +
+  scale_colour_brewer(palette='Reds')
+```
+
+I wonder which countries are above the obese treshold for the majority of its 
+population.
+
+```{r BMI_obese_countries}
+unique(subset(healthData, BMI >= 30 & Year == 2008)$Country)
+```
+
+The results are very interesting, because they are counter-intuitive if you are 
+not familiarized with the data. However, **these results relate perfectly to the
+current obesity problem in the Pacific countries** 
+(<https://en.wikipedia.org/wiki/Obesity_in_the_Pacific>).
+
+This data would benefit a lot from being plotted on a world map. 
+
+```{r BMI_world_map}
+worldMap <- map_data(map = "world")
+ggplot() +
+  # base layer
+  geom_map(data = worldMap, 
+           map = worldMap, 
+           aes(map_id = region, x = long, y = lat), 
+           fill = "white", 
+           colour = "black", 
+           size = 0.25) +
+  # Data layer
+  geom_map(data = healthData, 
+           map = worldMap, 
+           aes(map_id = Country, fill = BMIClassification), 
+           color = "white", 
+           size=0.25)
+```
+
+Some countries are not displaying correctly, because the name of some countries 
+do not match to the map names. Let's see who they are.
+
+```{r echo = TRUE, country_name_fix}
+# Determine which names are not matched to the map regions. 
+# From the data to the map.
+unique(healthData$Country)[!unique(healthData$Country) %in% 
+                             unique(worldMap$region)]
+
+# And form the map to the data.
+unique(worldMap$region)[!unique(worldMap$region) %in% 
+                          unique(healthData$Country)]
+
+```
+
+So the problem seems to be that the names on the geom_map regions are obsolete 
+('USSR', 'Czechoslovakia'...), 'Republic' is abbreviate to 'Rep.' in our 
+dataset, and other small errors. After some research, I found that the rworldmap
+package will be more accurate and easier to use.
+
+I will also do one more step to get the country names to ISO3 Country Codes in 
+order to minimize mismatches, using the countrycode package.
+
+```{r echo = TRUE, BMI_rworldmap}
+# Create the country codes
+healthData$CountryCode <- factor(countrycode(healthData$Country,
+                                             'country.name', 
+                                             'iso3c'))
+
+# Join the data with the rworldmap map
+mapBMI <- joinCountryData2Map(healthData,
+                              joinCode = 'ISO3',
+                              nameJoinColumn = 'CountryCode')
+```
+
+Apparently, one country code (totalling 58 observations) failed to match with a 
+region in the map. In any case, that's much better than what we had before.
+
+```{r BMI_rworldmap_plot}
+# Plot the data
+orangePalette <- brewer.pal(4,'Oranges')
+mapCountryData(mapBMI, 
+               nameColumnToPlot = 'BMIClassification',
+               colourPalette = orangePalette,
+               catMethod = 'categorical')
+```
+
+That's better. I want to zoom to the Pacific area to visualize the countries 
+with high obesity rankings. 
+
+```{r pacific_BMI_map_1}
+# And plot the map within the limits.
+mapCountryData(mapBMI, 
+               nameColumnToPlot = 'BMIClassification',
+               colourPalette = orangePalette,
+               catMethod = 'categorical',
+               xlim = c(-180,-140),
+               ylim = c(-30,30))
+```
+
+Unfortunately, the countries are too small to see them clearly.
+
+```{r pacific_BMI_map_2}
+mapCountryData(mapBMI, 
+               nameColumnToPlot = 'BMIClassification',
+               colourPalette = orangePalette,
+               catMethod = 'categorical',
+               xlim = c(-170,-150),
+               ylim = c(-20,10))
+```
+
+
+Two questions arise at this stage: 
+
+1. Are those changes in BMI a consequence of bad dieting?
+
+and 
+
+2. How is this higher BMI correlated with cancer?
+
+# 2. Is this increase in global BMI a consequence of the diet?
+
+In short, **is this BMI increase an effect of fast food and bad diets?** 
+Fast food is shown to contribute to high blood cholesterol levels. Let's analyze
+how cholesterol levels are evolving worldwide.
+
+## 2.1. Cholesterol Exploration
+
+```{r Load_cholesterol_data}
+maleCholesterol <- read.csv('Indicator_TC male ASM.csv', sep = ';')
+femaleCholesterol <- read.csv('Indicator_TC female ASM.csv', sep = ';')
+```
+
+Exactly as did with the BMI, which distribution have the cholesterol levels 
+worldwide?
+
+```{r cholesterol_summary}
+summary(maleCholesterol$X2008)
+summary(femaleCholesterol$X2008)
+```
+
+Again, it seems that females have higher choelsterol than males.
+
+```{r cholesterol_histograms}
+plotMaleCholesterol <- ggplot(aes(x = X2008), data = maleCholesterol) +
+  geom_histogram(binwidth = 0.1, color = '#ffffff', fill = '#333333') +
+  xlab('Male Cholesterol blood levels in 2008 (mmol/L)') +
+  ylab('Number of Countries') +
+  scale_x_continuous(limits = c(3.5,5.75), breaks = seq(3.5,5.75,0.25))
+plotFemaleCholesterol <- ggplot(aes(x = X2008), data = femaleCholesterol) +
+  geom_histogram(binwidth = 0.1, color = '#ffffff', fill = '#333333') +
+  xlab('Female Cholesterol blood levels in 2008 (mmol/L)') +
+  ylab('Number of Countries') +
+  scale_x_continuous(limits = c(3.5,5.75), breaks = seq(3.5,5.75,0.25))
+grid.arrange(plotMaleCholesterol, plotFemaleCholesterol, ncol = 1)
+```
+
+## 2.2. Cholesterol Data Reshape
+
+In order to study the evolution of blood cholesterol levels and integrate this 
+data with the BMI data, I have to convert it from wide to long format.
+
+```{r echo = TRUE, cholesterol_reshape}
+# Add the gender column that we'll use later
+maleCholesterol$Gender <- 'M'
+femaleCholesterol$Gender <- 'F'
+
+# Convert the data to long format
+maleCholesterol_long <- melt(maleCholesterol,
+                     id.vars = c('Country', 'Gender'),
+                     variable.name = 'Year',
+                     value.name = 'Cholesterol')
+femaleCholesterol_long <- melt(femaleCholesterol,
+                     id.vars = c('Country', 'Gender'),
+                     variable.name = 'Year',
+                     value.name = 'Cholesterol')
+
+# Group Male and Female Data
+cholesterolData <- rbind(maleCholesterol_long, femaleCholesterol_long)
+cholesterolData$Gender <- factor(healthData$Gender)
+cholesterolData$Year <- factor(healthData$Year, 
+                          labels = c(1980:2008))
+
+# And finally, integrate!
+healthData <- merge(healthData, cholesterolData)
+```
+
+```{r cholesterol_housekeeping}
+# Housekeeping, don't mind me
+rm(list = ls(pattern = "^male"))
+rm(list = ls(pattern = "^female"))
+rm(list = ls(pattern = "^plot"))
+rm(cholesterolData, worldMap, mapBMI, orangePalette)
+```
+
+## 2.3. Cholesterol evolution in the last decades
+
+Is the cholesterol in blood concentration behaving equally as the BMI?
+
+```{r cholesterol_evolution}
+ggplot(aes(x = Year, y = Cholesterol), data = healthData) +
+  geom_jitter(alpha = 1/10, color = '#cccccc') +
+  geom_smooth(aes(group = Gender, color = Gender)) +
+  scale_x_discrete(breaks = seq(1980,2008,2))
+```
+
+Interesting! **Although the worldwide BMI is increasing, the cholesterol in 
+blood levels are decreasing!** I wasn't expecting this *at all*. Nevertheless, 
+I'll continue with the analysis of the correlation between both parameters.
+
+## 2.4. BMI & Cholesterol Analysis
+
+Let's view it from a BMI classification point of view.
+
+```{r cholesterol_BMI_evolution}
+ggplot(aes(x = Year, y = Cholesterol), data = healthData) +
+  geom_jitter(alpha = 1/10, color = '#cccccc') +
+  scale_x_discrete(breaks = seq(1980,2008,2)) +
+  geom_line(aes(group = interaction(BMIClassification,Gender), 
+                color = BMIClassification, linetype = Gender), 
+            stat = 'summary', 
+            fun.y = median, 
+            size = 0.75) +
+  xlab('Year') +
+  ylab('Cholesterol blood levels (mmol/L)')
+```
+
+Now, that makes a little more sense. **Cholesterol levels in blood are 
+descending in healthy and overweight populations, but stay steady on Obese 
+populations!**
+
+Moreover, it seems that although the female cholesterol levels are higher 
+worldwide, males have greater cholesterol levels in overweight and obese 
+populations.
+
+Taking into account these differences, is the BMI a good indicator for the 
+cholesterol blood levels?
+
+```{r BMI_cholesterol_boxplot}
+ggplot(aes(x = BMIClassification, y = Cholesterol, fill = Gender), 
+       data = subset(healthData, Year == 2008)) +
+  geom_boxplot()
+```
+
+```{r echo = TRUE, BMI_cholesterol_correlation}
+maleHealthData2008 <- subset(healthData, Year == 2008 & Gender == 'M')
+femaleHealthData2008 <- subset(healthData, Year == 2008 & Gender == 'F')
+cor(maleHealthData2008$BMI,maleHealthData2008$Cholesterol)
+cor(femaleHealthData2008$BMI,femaleHealthData2008$Cholesterol)
+cor(subset(healthData, Year == 2008)$BMI,
+    subset(healthData, Year == 2008)$Cholesterol)
+```
+
+As expected, **there is a great correlation between BMI and cholesterol blood 
+levels**, specially on males! So, although cholesterol blood levels worldwide 
+are descending, they appear highly correlated with the BMI, which is increasing
+worldwide.
+
+At this stage, I realize that this data may be 'biased' because the nutritional
+differences between highly-developed and non-developed countries, where 
+malnutrition happens and, in consequence, lower cholesterol levels are expected.
+In contrast, fast food is more typical of "westernized" countries. 
+
+## 2.5. Country classification
+
+To take into account the aforementioned differences in country development, I'll
+use the data of GDP(PPP) per country. I decided to use this data because of the
+following statement:
+
+> The measure that most economists prefer, therefore, is GDP (PPP) ["GDP based 
+> on purchasing power parity"] per capita. GDP (PPP) per capita compares 
+> generalized differences in living standards on the whole between nations 
+> because PPP takes into account the relative cost of living and the inflation
+> rates of countries, rather than using just exchange rates, which may distort 
+> the real differences in income. 
+>
+> [Source](http://bit.ly/1CJFb2F)
+
+```{r Load_GDP_data}
+CountryGDP <- read.csv('indicator gapminder gdp_per_capita_ppp.csv', sep = ';')
+```
+
+I decided to arbitrarilly define as "rich" countries the ones at the top 25% of
+GDP(PPP), and as 'poor' countries the bottom 25% in relation to its GDP (PPP). 
+
+Let's visualize the GDP distribution in a map for the 2008 data.
+
+```{r results = 'hide', GDP_map_prep}
+# Get the ISO country code.
+CountryGDP$CountryCode <- factor(countrycode(CountryGDP$Country,
+                                             'country.name', 
+                                             'iso3c'))
+
+# Join the data.
+mapGDP <- joinCountryData2Map(CountryGDP,
+                              joinCode = 'ISO3',
+                              nameJoinColumn = 'CountryCode')
+
+```
+
+```{r GDP_map}
+# Plot the map.
+bluesPalette <- brewer.pal(7,'Blues')
+mapCountryData(mapGDP, 
+               nameColumnToPlot = 'X2008',
+               colourPalette = bluesPalette)
+```
+
+The poorest countries are found in Africa.
+
+I'll add the categoric classification for the GDP and integrate the data with 
+the healthData from the year 2008.
+
+```{r echo = TRUE, Reshape_and_merge_GDP_data}
+# Get the 2008 data and rename the columns
+GDP2008 <- CountryGDP[c('Country', 'X2008')]
+names(GDP2008) <- c('Country', 'GDP')
+
+# Add the categorical classification
+GDP2008$GDPClassification <- cut(GDP2008$GDP, 
+  breaks = c(min(GDP2008$GDP), 
+            quantile(GDP2008$GDP, 0.25), 
+            quantile(GDP2008$GDP, 0.75), 
+            max(GDP2008$GDP)),
+  labels = c('Poor', 'Middle', 'Rich'))
+
+# There are not the same countries in the two datasets...
+countriesWithBMI <- GDP2008$Country
+
+# ... And I have to keep male and female BMI separated.
+maleHealthData2008 <- subset(subset(healthData, 
+                                    Gender == 'M' & Year == '2008'), 
+                             Country %in% countriesWithBMI)
+femaleHealthData2008 <- subset(subset(healthData, 
+                                      Gender == 'F' & Year == '2008'), 
+                               Country %in% countriesWithBMI)
+
+maleHealthData2008 <- merge(GDP2008, maleHealthData2008, all=FALSE)
+femaleHealthData2008 <- merge(GDP2008, femaleHealthData2008, all=FALSE)
+
+# The final 2008 data frame
+healthData2008 <- rbind(maleHealthData2008, femaleHealthData2008)
+```
+
+```{r GDP_housekeeping}
+# Housekeeping, don't mind me.
+rm(countriesWithBMI, maleHealthData2008, femaleHealthData2008, GDP2008,
+   bluesPalette, mapGDP)
+```
+
+## 2.5.1 Country GDP & Cholesterol
+
+Let's do a simple scatterplot of Cholesterol levels vs GDP (PPP) factoring the 
+Gender in.
+
+```{r Cholesterol_GDP_scatter}
+ggplot(aes(x = GDP, y = Cholesterol, color = GDPClassification, pch = Gender), 
+       data = healthData2008) +
+  geom_point()
+```
+
+This seems to be an exponential relationship. Let's alter the scale.
+
+```{r Cholesterol_GDP_scatter_scale}
+ggplot(aes(x = GDP, y = Cholesterol, color = GDPClassification, pch = Gender), 
+       data = healthData2008) +
+  geom_point() +
+  scale_x_log10()
+```
+
+Yeah! But this boxplots would suit more this type of graph! I'll also mark the 
+line between Healthy and Borderline high cholesterol levels 
+([Source](http://mayocl.in/1KxcjuH)).
+
+```{r Cholesterol_GDP_boxplot_clean}
+ggplot(aes(x = GDPClassification, y = Cholesterol), 
+       data = subset(healthData2008, !is.na(GDPClassification))) +
+  geom_boxplot(alpha = 1/5, aes(fill = Gender)) +
+  #scale_x_log10() +
+  #geom_smooth(aes(group = Gender, color = Gender)) +
+  xlab('Country GDP(PPP)') +
+  ylab('Average blood cholesterol levels (mmol/L)') +
+  geom_hline(yintercept=(5.2), linetype = 2, color = '#333333', alpha = 1/2)
+```
+
+Let's quantify that relationship.
+
+```{r Cholesterol_GDP_correlation}
+cor(healthData2008$GDP, healthData2008$Cholesterol)
+```
+
+So we can conclude that **blood cholesterol levels are highly correlated with 
+country development**. This fact may affect the relationship between cholesterol
+and BMI levels that we found before.
+
+## 2.5.2 Country GDP & BMI
+
+I wonder if the estimated country BMI is equally associated with its country
+development level.
+
+```{r BMI_GDP_graphics}
+ggplot(aes(x = GDP, y = BMI, pch = Gender, color = GDPClassification), 
+       data = healthData2008) +
+  geom_point()
+
+ggplot(aes(x = GDP, y = BMI, color = GDPClassification, pch = Gender), 
+       data = healthData2008) +
+  geom_point() +
+  scale_x_log10() +
+  geom_smooth(aes(group = Gender)) +
+  geom_hline(yintercept = c(25,30), alpha = 1/5, linetype = 2)
+
+ggplot(aes(x = GDPClassification, y = BMI, color = Gender), 
+       data = subset(healthData2008, !is.na(GDPClassification))) +
+  geom_boxplot()
+```
+
+Although poor countries tend to have lower BMI, the difference between middle 
+and rich countries is not clear.
+
+# 2.5.3. Country GDP, BMI & Cholesterol levels
+
+Now it's time to take into account the three parameters. In this context, it 
+means that I will only consider the data from "developed" countries, and ignore
+the one from the "poorest" countries because I consider it unreliable (for the
+nutritional reasons explained above, and the medical that will explain below).
+
+As I'm gonna be subsetting for this parameter in almost every analysis from here
+onwards, I decided to create a simple function for accessing it more easily. 
+Similarly, I'm gonna do the same extremely easy functions with male and female
+subsetting.
+
+```{r echo = TRUE, custom_GDP_function}
+
+# Returns the dataframe without the Poor and NA classifications for the 
+# GDPClassification parameter. 
+nonPoor <- function(dataframe) {
+  return(subset(dataframe, 
+         GDPClassification == 'Middle' | GDPClassification == 'Rich'))
+}
+
+# Returns the dataframe without subsetted by males of the Gender parameter.
+males <- function(dataframe) {
+  return(subset(dataframe, Gender == 'M'))
+}
+# Returns the dataframe without subsetted by males of the Gender parameter.
+females <- function(dataframe) {
+  return(subset(dataframe, Gender == 'F'))
+}
+```
+
+
+```{r three_variables_GDP}
+ggplot(aes(x = BMIClassification, y = Cholesterol), 
+       data = nonPoor(subset(healthData2008, Year == 2008))) +
+  geom_boxplot(aes(fill = Gender), alpha = 1/5) +
+  xlab('Country BMI Classification') +
+  ylab('Average country blood cholesterol levels (mmol/L)') +
+  ggtitle('Relationship between BMI classification and Cholesterol\n
+          blood levels in "non-poor" world populations. 2008') +
+  geom_hline(yintercept=(5.2), linetype = 2, color = '#333333', alpha = 1/2)
+```
+
+**When we ignore the data from the "poorest" countries, the correlation between 
+BMI and cholesterol dissapears.** 
+
+# 3. Cancer
+
+Finally, let's integrate what we have with cancer incidence data. 
+Let's start by taking a look at the cancer data and its distribution.
+
+## 3.1. Cancer data structure
+
+```{r Load_cancer_data}
+Cancer2002 <- read.csv('Indicator_Cancer_All.csv', sep = ';')
+```
+
+```{r Cancer_data_structure}
+str(Cancer2002)
+```
+
+The dataset contains the number of cancer cases for 100.000 habitants of 
+different cancer types at several countries from the year 2002. I will use the 
+2002 country data for the next analysis in consequence.
+
+## 3.2. Cancer data distribution
+
+```{r cancer_histograms}
+ggplot(aes(x = value), data = melt(Cancer2002)) + 
+    facet_wrap(~variable, scales = 'free_x') + 
+    geom_histogram()
+
+summary(Cancer2002)
+```
+
+The distribution for the majority of cancer incidences appears to be somewhat
+long-tailed. Again, I worry that the development and, in consequence, medical
+advancement of the countries affects the number of cancers detected. For this,
+I'll take into account the country GDP in the next analyses too.
+
+## 3.3. Cancer data integration
+
+Next, I'll integrate the number of cancer cases with the health and economic 
+2002 data. 
+
+```{r echo = TRUE, cancer_data_reshape}
+# This time I need the 2002 data. First the economic parameters.
+GDP2002 <- CountryGDP[c('Country', 'X2002')]
+names(GDP2002) <- c('Country', 'GDP')
+GDP2002$GDPClassification <- cut(GDP2002$GDP, 
+                                 breaks = c(min(GDP2002$GDP), 
+                                            quantile(GDP2002$GDP, 0.25), 
+                                            quantile(GDP2002$GDP, 0.75), 
+                                            max(GDP2002$GDP)),
+                                 labels = c('Poor', 'Middle', 'Rich'))
+
+# And now the health data. I separate men and women because there are specific
+# cancer types for the genres.
+# First, subset the BMI & Cholesterol levels
+maleHealthData2002 <- subset(males(healthData), Year == 2002)
+# Add the economic data
+maleHealthData2002 <- merge(maleHealthData2002, GDP2002, all = FALSE)
+# Add the cancer incidence data
+maleHealthData2002 <- merge(maleHealthData2002, 
+                            Cancer2002[c('Country', 'Prostate.Male', 
+                                         'Colon.Male', 'Liver.Male', 
+                                         'Lung.Male', 'Stomach.Male')], 
+                            all = FALSE)
+# Change the column names so it matches with the female data
+names(maleHealthData2002) <- c('Country', 'Gender', 'Year', 'BMI', 
+   'BMIClassification', 'CountryCode', 'Cholesterol', 'GDP', 
+   'GDPClassification', 'Prostate', 'Colon', 'Liver', 'Lung', 'Stomach')
+# Add the Breast and Cervix with NA
+maleHealthData2002$Cervix <- NA
+maleHealthData2002$Breast <- NA
+
+# The same for female data
+femaleHealthData2002 <- subset(females(healthData), Year == 2002)
+femaleHealthData2002 <- merge(femaleHealthData2002, GDP2002, all = FALSE)
+femaleHealthData2002 <- merge(femaleHealthData2002, 
+                              Cancer2002[c('Country', 'Breast.Cancer', 'Cervix',
+                                           'Colon.Female', 'Liver.Female', 
+                                           'Lung.Female', 'Stomach.Female')], 
+                              all = FALSE)
+
+names(femaleHealthData2002) <- c('Country', 'Gender', 'Year', 'BMI', 
+   'BMIClassification', 'CountryCode', 'Cholesterol', 'GDP', 
+   'GDPClassification', 'Breast', 'Cervix', 'Colon', 'Liver', 'Lung', 'Stomach')
+femaleHealthData2002$Prostate <- NA
+
+# And joint the two datasets
+healthData2002 <- rbind(maleHealthData2002, femaleHealthData2002)
+
+```
+
+```{r cancer_housekeeping}
+# Housekeeping, don't mind me.
+rm(Cancer2002, GDP2002, maleHealthData2002, femaleHealthData2002)
+```
+
+## 3.4. Non-gastrointestinal cancers
+
+There are 3 gender-specific, non-gastrointestinal cancers in the dataset: 
+brest, cervix, and prostate cancer. I'll analyze them first because they should
+be less correlated with nutriotional data than gastrointentestinal cancers.
+
+## 3.4.1. Prostate Cancer
+
+Prostate Cancer only affects males so it should be more easy to work with. As 
+reasoned above, I'll take into account the country GDP because it is expected 
+that more cancers are detected in richer countries because of better health 
+systems.
+
+```{r Prostate_exploration}
+prostateBMI <- ggplot(aes(x = BMI, y = Prostate), 
+                 data = males(healthData2002)) +
+  geom_point() +
+  facet_wrap(~GDPClassification, ncol = 1)
+
+prostateCholesterol <- ggplot(aes(x = Cholesterol, y = Prostate), 
+                 data = males(healthData2002)) +
+  geom_point() +
+  facet_wrap(~GDPClassification, ncol = 1)
+
+grid.arrange(prostateBMI, prostateCholesterol, ncol = 2)
+```
+
+There actually seems to be certain **correlation between the BMI and cholesterol 
+levels and the prostate cancer incidences**, which I didn't expect.
+
+```{r Prostate_correlation}
+prostateBMI <- ggplot(aes(x = BMI, y = Prostate), 
+       data = nonPoor(males(healthData2002))) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  coord_cartesian(ylim = c(0,130))
+
+prostateCholesterol <- ggplot(aes(x = Cholesterol, y = Prostate), 
+       data = nonPoor(males(healthData2002))) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  coord_cartesian(ylim = c(0,130))
+
+grid.arrange(prostateBMI, prostateCholesterol, ncol = 2)
+rm(prostateBMI, prostateCholesterol)
+```
+
+A rapid search confirms this findings:
+
+> Epidemiological studies have associated high blood-cholesterol levels with an
+increased risk of Prostate Cancer. 
+>
+> [Source](http://bit.ly/1KxVL5J)
+
+## 3.4.2. Breast and Cervix Cancers.
+
+Breast and cervix cancers only affect women. Let's see its correlation with BMI
+and cholesterol levels.
+
+```{r Breast_cancer}
+
+breastBMI <- ggplot(aes(x = BMI, y = Breast), 
+                 data = nonPoor(females(healthData2002))) +
+  geom_point() +
+  facet_wrap(~GDPClassification, ncol = 1)
+
+breastCholesterol <- ggplot(aes(x = Cholesterol, y = Breast), 
+                  data = nonPoor(females(healthData2002))) +
+  geom_point() +
+  facet_wrap(~GDPClassification, ncol = 1)
+
+grid.arrange(breastBMI, breastCholesterol, ncol = 2)
+```
+
+It appears that choelsterol levels affect Breast cancer incidence, but BMI does
+not. 
+
+```{r Breast_correlation}
+breastBMI <- ggplot(aes(x = BMI, y = Breast), 
+       data = nonPoor(females(healthData2002))) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  coord_cartesian(ylim = c(0,110))
+
+breastCholesterol <- ggplot(aes(x = Cholesterol, y = Breast), 
+       data = nonPoor(females(healthData2002))) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  coord_cartesian(ylim = c(0,110))
+
+grid.arrange(breastBMI, breastCholesterol, ncol = 2)
+rm(breastBMI, breastCholesterol)
+```
+
+We can see how **cholesterol is highly correlated with Breast Cancer 
+incidence**. And again, it seems that we are supported by science.
+
+> High cholesterol levels may increase a woman's risk of developing breast 
+> cancer, a large new British study reports.
+>
+> [Source](http://wb.md/1LRnsnK)
+
+```{r Cervix_cancer}
+cervixBMI <- ggplot(aes(x = BMI, y = Cervix), 
+                 data = nonPoor(females(healthData2002))) +
+  geom_point() +
+  facet_wrap(~GDPClassification, ncol = 1)
+
+cervixCholesterol <- ggplot(aes(x = Cholesterol, y = Cervix), 
+                 data = nonPoor(females(healthData2002))) +
+  geom_point() +
+  facet_wrap(~GDPClassification, ncol = 1)
+
+grid.arrange(cervixBMI, cervixCholesterol, ncol = 2)
+rm(cervixBMI,cervixCholesterol)
+```
+
+In contrast, cervix Cancer does not appear affected by this parameters.
+
+## 3.4.3. Lung Cancer
+
+The last non-gastrointestinal cancer that we have incidence data is Lung cancer.
+Lung cancer affects both men and women, so we can study both groups in this
+analysis.
+
+```{r Lung_cancer}
+allLungBMI <- ggplot(aes(x = BMI, y = Lung), 
+                 data = nonPoor(healthData2002)) +
+  geom_point() +
+  ggtitle('BMI & Lung Cancer both genders\n')
+
+lungBMI <- ggplot(aes(x = BMI, y = Lung), 
+                 data = nonPoor(healthData2002)) +
+  geom_point() +
+  facet_wrap(~Gender, ncol = 2) +
+  ggtitle('BMI & Lung Cancer per gender\n')
+
+allLungCholesterol <- ggplot(aes(x = Cholesterol, y = Lung), 
+                 data = nonPoor(healthData2002)) +
+  geom_point() +
+  ggtitle('Cholesterol & Lung Cancer both genders\n')
+
+lungCholesterol <- ggplot(aes(x = Cholesterol, y = Lung), 
+                 data = nonPoor(healthData2002)) +
+  geom_point() +
+  facet_wrap(~Gender, ncol = 2) +
+  ggtitle('Cholesterol & Lung Cancer per gender\n')
+
+grid.arrange(allLungBMI, allLungCholesterol, lungBMI, lungCholesterol, ncol = 2)
+rm(allLungBMI, allLungCholesterol, lungBMI, lungCholesterol)
+```
+
+Again, **cholesterol levels are correlated with higher Lung Cancer incidence in
+male and female populations**, but specially in men.
+
+Let's model this correlation in "non-poor" countries.
+
+```{r Lung_cholesterol_correlation}
+
+ggplot(aes(x = Cholesterol, y = Lung, pch = Gender), 
+       data = nonPoor(healthData2002)) +
+  geom_point() +
+  geom_smooth(aes(color = Gender), method = 'lm') +
+  coord_cartesian(ylim = c(0,100))
+
+```
+
+Again, it appears that we are somewhat backed by science. In a Hawaii study, it
+was found that:
+
+> The results showed a significant positive association of dietary cholesterol 
+> and the risk of lung cancer in men, but not in women.
+>
+> [Source](http://www.ncbi.nlm.nih.gov/pubmed/3195565)
+
+## 3.5. Gastrointestinal cancers
+
+It's now time to analyze the incidence of gastrointestinal-related cancers. It 
+can be hypothesized that gastrointestinal-related cancers such as Colon, Stomach
+or Liver cancers may have more relationship with dietary and nutritional 
+parameters.
+
+To speed up the process of analyzing those cancers, I'm gonna use a for loop to 
+make and scatterplot of all of them and focus on the most insteresting ones.
+
+```{r echo = TRUE, gastrointestinal_cancers}
+
+gastrointestinalCancers <- c('Stomach', 'Colon', 'Liver')
+
+for (cancer in gastrointestinalCancers) {
+  # NOTE: I should do a for loop (parameter in parameters), but I don't get the
+  # x axis to work, although the rest is all ok.
+  bothBMI <- ggplot(aes(x = BMI, 
+                        y = nonPoor(healthData2002)[[cancer]]), 
+      data = nonPoor(healthData2002)) +
+      geom_point() +
+      xlab('BMI') +
+      ylab(cancer)
+  sexBMI <- bothBMI + facet_wrap(~Gender, ncol = 2)
+  
+  bothCholesterol <- ggplot(aes(x = Cholesterol,
+                         y = nonPoor(healthData2002)[[cancer]]), 
+      data = nonPoor(healthData2002)) +
+      geom_point() +
+      xlab('Cholesterol') +
+      ylab(cancer)
+  sexCholesterol <- bothCholesterol + facet_wrap(~Gender, ncol = 2)
+  
+  grid.arrange(bothBMI, bothCholesterol, sexBMI, sexCholesterol, ncol = 2)
+}
+
+```
+
+```{r gastrointestinal_housekeeping}
+# Housekeeping, don't mind me
+rm(list = ls(pattern = "^both"))
+rm(list = ls(pattern = "^sex"))
+rm(gastrointestinalCancers, cancer)
+```
+
+
+There seems to be a trend in the Colon cancers with our nutritional parameters. 
+I also notice some outliers in the liver cancer plots, but it doesn't appear to 
+mask any trend.
+
+Let's focus on the colon cancer correlation.
+
+```{r colon_cancer_plots}
+colonBMI <- ggplot(aes(x = BMI, y = Colon, color = Gender, pch = Gender), 
+                   data = nonPoor(healthData2002)) +
+  geom_point() +
+  geom_smooth(method = 'lm', alpha = 1/10)
+
+colonCholesterol <- ggplot(aes(x = Cholesterol, y = Colon, color = Gender, 
+                               pch = Gender), data = nonPoor(healthData2002)) +
+  geom_point() +
+  geom_smooth(method = 'lm', alpha = 1/10)
+grid.arrange(colonBMI, colonCholesterol, ncol = 2)
+rm(colonBMI, colonCholesterol)
+```
+
+So **although BMI does not appear to have an effect in the number of 
+gastrointestinal cancers, high blood cholesterol levels do**. 
+
+## 3.6. Summary Correlation Cholesterol and Cancer Incidence
+
+As a summary, let's plot the scatterplot in which we found a correlation with
+cholesterol.
+
+```{r fig.width = 10, cholesterol_cancers}
+
+prostate <- ggplot(aes(x = Cholesterol, y = Prostate), 
+       data = males(nonPoor(healthData2002))) +
+  geom_smooth(method = 'lm', alpha = 1/8, color = '#000000') +
+  geom_point(color = '#34495e', alpha = 1/4) +
+  coord_cartesian(ylim = c(0,130)) + 
+  geom_vline(xintercept = 5.2, linetype = 2, alpha = 1/3) +
+  xlab('Population Cholesterol blood levels (mmol/L)') +
+  ylab('Number of Prostate cancer cases per\n100,000 habitants') +
+  ggtitle('Relationship between Cholesterol blood levels and Prostate Cancer
+           cases in men world populations. 2002\n') +
+  theme_minimal(base_size = 9)
+
+breast <- ggplot(aes(x = Cholesterol, y = Breast), 
+       data = females(nonPoor(healthData2002))) +
+  geom_smooth(method = 'lm', alpha = 1/8, color = '#000000') +
+  geom_point(color = '#34495e', alpha = 1/4) +
+  coord_cartesian(ylim = c(0,110)) + 
+  geom_vline(xintercept = 5.2, linetype = 2, alpha = 1/3) +
+  xlab('Population Cholesterol blood levels (mmol/L)') +
+  ylab('Number of Breast cancer cases per\n100,000 habitants') +
+  ggtitle('Relationship between Cholesterol blood levels and Breast Cancer
+           cases in women world populations. 2002\n') +
+  theme_minimal(base_size = 10)
+
+lung <- ggplot(aes(x = Cholesterol, y = Lung), data = nonPoor(healthData2002)) +
+  geom_smooth(method = 'lm', alpha = 1/8, color = '#000000') +
+  geom_smooth(aes(color = Gender), method = 'lm', alpha = 1/8) +
+  geom_point(aes(pch = Gender), color = '#34495e', alpha = 1/4) +
+  coord_cartesian(ylim = c(0,75)) + 
+  geom_vline(xintercept = 5.2, linetype = 2, alpha = 1/3) +
+  xlab('Population Cholesterol blood levels (mmol/L)') +
+  ylab('Number of Lung cancer cases per\n100,000 habitants') +
+  ggtitle('Relationship between Cholesterol blood levels and Lung Cancer
+          cases in world populations. 2002\n') +
+  theme_minimal(base_size = 10)
+
+colon <- ggplot(aes(x = Cholesterol, y = Colon),
+                data = nonPoor(healthData2002)) +
+  geom_smooth(method = 'lm', alpha = 1/8, color = '#000000') +
+  geom_smooth(aes(color = Gender), method = 'lm', alpha = 1/8) +
+  geom_point(aes(pch = Gender), color = '#34495e', alpha = 1/4) +
+  coord_cartesian(ylim = c(0,60)) + 
+  geom_vline(xintercept = 5.2, linetype = 2, alpha = 1/3) +
+  xlab('Population Cholesterol blood levels (mmol/L)') +
+  ylab('Number of Colon cancer cases per\n100,000 habitants') +
+  ggtitle('Relationship between Cholesterol blood levels and
+          Colon Cancer cases world populations. 2002\n') +
+  theme_minimal(base_size = 10)
+
+grid.arrange(prostate, breast, lung, colon, ncol = 2)
+rm(prostate, breast, lung, colon)
+
+```
+
+## 3.7. BMI, Cholesterol & General Cancer Incidence
+
+Finally, let's take a step back and study the simple relationship between BMI 
+and cholesterol and general cancer incidence. 
+
+### 3.7.1. Data reshape
+
+To do so, I'll convert the data from wide to long format, and add two new 
+columns, in which I round the BMI and cholesterol levels to certain decimals 
+to easily group the data and plot histograms.
+
+```{r echo = TRUE, All_cancer_reshape}
+# Remove the columns we don't want
+healthData2002Long <- nonPoor(healthData2002)[-c(3,5,6,8,9)]
+# Convert the data to long format
+healthData2002Long <- melt(healthData2002Long,
+                        id.vars = c('Country', 'Gender', 'BMI', 'Cholesterol'),
+                        variable.name = 'TypeOfCancer',
+                        value.name = 'NumberOfCases')
+# Round BMI to the nearest 0.5
+healthData2002Long$BMIRounded <- round(healthData2002Long$BMI*2,0)/2
+# Round Cholesterol to the nearest 0.1
+healthData2002Long$CholesterolRounded <- round(healthData2002Long$Cholesterol,1)
+```
+
+### 3.7.2. Cancer Incidence Distribution
+
+Let's plot the data to view the distribution.
+
+```{r All_cancer_histograms}
+cancersBMI <- ggplot(aes(x = BMIRounded, y = NumberOfCases, 
+                         fill = TypeOfCancer), data = healthData2002Long) +
+  geom_bar(stat = 'identity')
+cancersChol <- ggplot(aes(x = CholesterolRounded, y = NumberOfCases, 
+                          fill = TypeOfCancer), data = healthData2002Long) +
+  geom_bar(stat = 'identity')
+
+grid.arrange(cancersBMI, cancersChol, ncol = 1)
+rm(cancersBMI, cancersChol)
+```
+
+### 3.7.2. Cancer Incidence Normalization
+
+That's nice, but we have to normalize the data, taking into account the number
+of cases for each BMI and cholesterol level occurrence. I'll use dplyr to group 
+the data. It is important that we ignore the NAs caused by gender-specficic 
+cancers here.
+
+```{r echo = TRUE, All_cancer_normalization}
+
+BMICancerSummary <- healthData2002Long %>%
+  group_by(BMIRounded, Gender, TypeOfCancer) %>%
+  summarize(meanNumberOfCancers = mean(NumberOfCases, na.rm = TRUE),
+            n = n()) %>%
+  arrange(BMIRounded)
+
+CholCancerSummary <- healthData2002Long %>%
+  group_by(CholesterolRounded, Gender, TypeOfCancer) %>%
+  summarize(meanNumberOfCancers = mean(NumberOfCases, na.rm = TRUE),
+            n = n()) %>%
+  arrange(CholesterolRounded)
+
+# As an additional step, I'll change all the NaN values to 0.
+BMICancerSummary$meanNumberOfCancers[
+  is.nan(BMICancerSummary$meanNumberOfCancers)] <- 0
+CholCancerSummary$meanNumberOfCancers[
+  is.nan(CholCancerSummary$meanNumberOfCancers)] <- 0
+
+```
+
+Let's plot the normalized data.
+
+```{r All_cancer_normalized}
+plotBMICancerSummary <- ggplot(aes(x = BMIRounded, y = meanNumberOfCancers, 
+                             fill = TypeOfCancer), 
+                         data = BMICancerSummary) +
+  geom_bar(stat = 'identity')
+plotCholCancerSummary <- ggplot(aes(x = CholesterolRounded, 
+                              y = meanNumberOfCancers, fill = TypeOfCancer), 
+                          data = CholCancerSummary) +
+  geom_bar(stat = 'identity')
+
+grid.arrange(plotBMICancerSummary, plotCholCancerSummary, ncol = 1)
+rm(plotBMICancerSummary, plotCholCancerSummary)
+```
+
+That makes more sense. It is interesting how the mean number of cases increases
+with the cholesterol levels. However, here we have the data for male and female
+population grouped, and there are specific cancers for each gender in the plot.
+Let's view its gender in more detail. 
+
+A part from the number of cancers per parameter, I'd like to see the composition
+of this cancers, to corroborate that some types of cancers appear more at 
+different BMI and Cholesterol, independently of the total number of cancer 
+incidence.
+
+### 3.7.3. Male Cancer Incidence
+
+```{r Male_cancer_histograms}
+maleBMICancerSummary <- ggplot(aes(x = BMIRounded, y = meanNumberOfCancers, 
+                             fill = TypeOfCancer), 
+                         data = males(BMICancerSummary)) +
+  geom_bar(stat = 'identity')
+maleCholCancerSummary <- ggplot(aes(x = CholesterolRounded, 
+                              y = meanNumberOfCancers, fill = TypeOfCancer), 
+                          data = males(CholCancerSummary)) +
+  geom_bar(stat = 'identity')
+fillmaleBMICancerSummary <- ggplot(aes(x = BMIRounded, y = meanNumberOfCancers, 
+                             fill = TypeOfCancer), 
+                         data = males(BMICancerSummary)) +
+  geom_bar(stat = 'identity', position = 'fill') 
+fillmaleCholCancerSummary <- ggplot(aes(x = CholesterolRounded, 
+                              y = meanNumberOfCancers, fill = TypeOfCancer), 
+                          data = males(CholCancerSummary)) +
+  geom_bar(stat = 'identity', position = 'fill')
+grid.arrange(maleBMICancerSummary, maleCholCancerSummary, 
+             fillmaleBMICancerSummary, fillmaleCholCancerSummary, ncol = 2)
+
+rm(maleBMICancerSummary, maleCholCancerSummary, fillmaleBMICancerSummary,
+   fillmaleCholCancerSummary)
+```
+
+These graphs give an overall perspective on the cancer relationship with BMI
+and cholesterol levels in male populations. We can clearly see how, similar to
+what we saw with the combined populations, the number cancer incidence rises at
+higher cholesterol levels, and how the percentage of its cancer type evolves 
+during this evolution. For example, it is clear here that colon cancer incidence
+is higher at higher cholesterol levels, while the percentage of prostate cancer
+to the rest of cancer types is not dependent of the cholesterol levels. 
+
+### 3.7.4. Female population
+
+```{r Female_cancer_histograms}
+femaleBMICancerSummary <- ggplot(aes(x = BMIRounded, y = meanNumberOfCancers, 
+                             fill = TypeOfCancer), 
+                         data = females(BMICancerSummary)) +
+  geom_bar(stat = 'identity')
+femaleCholCancerSummary <- ggplot(aes(x = CholesterolRounded, 
+                              y = meanNumberOfCancers, fill = TypeOfCancer), 
+                          data = females(CholCancerSummary)) +
+  geom_bar(stat = 'identity')
+fillfemaleBMICancerSummary <- ggplot(aes(x = BMIRounded, 
+                                         y = meanNumberOfCancers, 
+                             fill = TypeOfCancer), 
+                         data = females(BMICancerSummary)) +
+  geom_bar(stat = 'identity', position = 'fill') 
+fillfemaleCholCancerSummary <- ggplot(aes(x = CholesterolRounded, 
+                              y = meanNumberOfCancers, fill = TypeOfCancer), 
+                          data = females(CholCancerSummary)) +
+  geom_bar(stat = 'identity', position = 'fill')
+grid.arrange(femaleBMICancerSummary, femaleCholCancerSummary, 
+             fillfemaleBMICancerSummary, fillfemaleCholCancerSummary, ncol = 2)
+
+rm(femaleBMICancerSummary, femaleCholCancerSummary, fillfemaleBMICancerSummary,
+   fillfemaleCholCancerSummary)
+```
+
+The results for the female population are highly similar to the ones obtained 
+for the male population. It is interesting to see how the breast cancer 
+percentage in comparison to other cancer types rises at higher cholesterol 
+levels, while the stomach cancer percentage diminishes.
+
+### 3.8. Cholesterol and Common Cancers Types in Men and Women
+
+To finish this data exploration study, I'd like to visualize the evolution of 
+different cancer types common to both men and women with the blood cholesterol
+levels, as it's the most striking relationship that I found in this study. To
+do so, I'll group the data once again, this time without separating by gender.
+
+```{r echo = TRUE, Cholesterol_Cancer_Summary}
+AllCholCancerSummary <- subset(CholCancerSummary,  TypeOfCancer != 'Cervix' & 
+                       TypeOfCancer != 'Breast' & TypeOfCancer != 'Prostate')
+AllCholCancerSummary <-  AllCholCancerSummary %>%
+  group_by(CholesterolRounded, TypeOfCancer) %>%
+  summarize(meanNumberOfCancers = mean(meanNumberOfCancers),
+            n = n()) %>%
+  arrange(CholesterolRounded)
+```
+
+And plot the data.
+
+```{r Common_Cancers_histogram}
+ggplot(aes(x = CholesterolRounded, 
+           y = meanNumberOfCancers, 
+           fill = TypeOfCancer), 
+       data = AllCholCancerSummary) +
+  geom_bar(stat = 'identity') +
+  scale_fill_brewer(palette = 'Pastel1') +
+  geom_vline(xintercept = 5.2, linetype = 2, alpha = 1/3)
+```
+
+I think this plot summarizes perfectly the relationship that I was searching for
+between nutritional parameters and cancer incidence. My hypothesis was that I 
+would find this relationship with the BMI, as its the used indicator for 
+obesity, but finally found that the cholesterol blood levels are a better
+predictor for this data.
+
+# 4. Final Plots and Summary
+
+In this study I wanted to analyze if the increased obesity worldwide was related
+to a worsened diet, and what effect would this have on the number cancer levels
+at a population level. 
+
+## Obesity is increasing worldwide.
+
+```{r fig.width = 10, Final_Plot_1}
+
+ggplot(aes(x = Year, y = BMI), data = healthData) +
+  geom_jitter(alpha = 1/10, color = '#CCCCCC', aes(pch = Gender)) +
+  geom_smooth(aes(group = Gender, color = Gender), alpha = 1/2) +
+  scale_x_discrete(breaks = seq(1980,2008,2)) +
+  geom_hline(yintercept = c(18.5,25,30), linetype = 2, alpha = 1/2) +
+  xlab('Year') +
+  ylab('Estimated Country BMI') +
+  ggtitle('Evolution of Gender BMI in World Populations\n')
+
+```
+
+This scatterplot provides an interesting reflection on the evolution of the BMI
+worldwide.
+
+As a reminder, the current method for determining obesity classifies an 
+individual as underweight if its BMI is below 18.5. Healthy individuals are
+expected to have a BMI between 18.5 to 25, while overweight individuals comprise
+BMIs between 25 and 30. Finally, an individual with a BMI greater than 30 is
+classified as obese. 
+
+Although some populations could be classified as underweight at the early 80s, 
+no population average currently at this level. However, what is worrying is that
+the 2008 BMI estimate for more than half of the countries populations was 
+greater than 25: at an overweight level. Even more, some Pacific countries
+population have BMI estimates greater than 30, which directly means that the
+majority of the population on these countries is obese.
+
+The health implications of this obesity epidemic must be (as they are) a medical
+priority.
+
+## Cholesterol blood levels and BMI are not correlated in worldwide populations.
+
+```{r fig.width = 10, Final_Plot_2}
+
+ggplot(aes(x = BMIClassification, y = Cholesterol), 
+       data = nonPoor(healthData2008)) +
+  geom_boxplot(aes(fill = Gender), alpha = 1/5) +
+  xlab('Country BMI Classification') +
+  ylab('Average country blood cholesterol levels (mmol/L)') +
+  ggtitle('Relationship between BMI classification and Cholesterol blood levels
+          in "non-poor" world populations. 2008\n') +
+  geom_hline(yintercept=(5.2), linetype = 2, color = '#333333', alpha = 1/2)
+
+```
+
+I then wanted to study if I could correlate this BMI increase to a bad diet.
+Although this information is difficult to address, some indirect indicators of 
+diet type, such as cholesterol levels, may be interesting to analyze. Fast food
+and bad dieting increase Cholesterol blood levels, so I thought that maybe there
+was a correlation between the cholesterol levels and the BMI. 
+
+One important consideration when analyzing this country data was the development
+level of every country, because of the nutritional diferences between 
+"westernized" and "non-westernized" countries (see 2.5.1). To take this into
+account, I ignored the data from the bottom 25% "poorest" countries as
+determined by its GDP (PPP). 
+
+However, I did not find any meaningful relationship between the BMI and blood
+Cholesterol levels ata population level.
+
+## High Cholesterol blood levels are correlated with higher cancer cases.
+
+```{r fig.width = 10, Final_Plot_3}
+
+ggplot(aes(x = CholesterolRounded, y = meanNumberOfCancers, 
+           fill = TypeOfCancer), data = AllCholCancerSummary) +
+  geom_bar(stat = 'identity') +
+  xlab('Population Cholesterol blood levels (mmol/L)') +
+  ylab('Cancer cases per 100,000\nhabitants Male and Female Average') +
+    ggtitle('Relationship between Cholesterol blood levels and Cancer cases 
+            in mixed gender world populations. 2002\n') +
+  geom_vline(xintercept = 5.2, linetype = 2, alpha = 1/3)
+
+```
+
+I finally analyzed the relationship between the different population BMI and
+cholesterol levels and the incidence of different types of cancer. Although I 
+did not found any special relationship between BMI and cancer incidence as I was
+expecting, I found this relationship to be with the blood cholesterol levels. 
+
+Higher cholesterol blood levels correlated with higher cancer incidences of
+different types in both male and female populations (see 3.6) . As cholesterol 
+in blood levels are highly related to the diet, my initial guess was that I 
+would find more meaningful correlations between those levels and 
+gastrointestinal cancers, but only found it to be true with Colon Cancer.
+
+# 5. Reflection
+
+The datasets used in this study contain information of different parameters from
+about 200 world countries. Sometimes I struggled to maintain the reason because 
+the data for male and female populations was separated. This enabled finer
+exploration of the parameters, but also complicated a lot of otherwise simple
+processes. I started exploring the principal parameter that I wanted to study: 
+the population BMI, and could create a linear model for its worlwide increase. 
+
+Eventually I integrated this data with the only diet-related parameter I could 
+find in the Gapminder database: the total cholesterol blood levels. As I was
+analyzing this relationship, I realized that I shouldhave into account the
+differences between country development, and I also integrated data for each
+country GDP (PPP). Unfortunately, I did not find the relationship I was 
+expecting between BMI and Cholesterol levels, and I could not hint to a certain
+effect of the bad dieting to this overweight and obesity increase worldwide.
+
+Nevertheless, I continued my exploration to the main question: are those changes
+in obesity affecting the cancer incidence? I decided to analyze the cholesterol
+data too because it already was available, and found in this variable that the
+correlation that I was searching in the BMI but didn't found. This relationship 
+was specially highlighted in the Colon Cancer, where I draw a linear model of 
+the correlation. I struggled in the normalization of the data, as I had to 
+account for the number of cases each observation was made in order to depict a
+correct ratio of cancer incidences to each parameter.
+
+Finally, I'd like to talk a little about the data and conclusions that can be 
+drawn from this study. I was interested in analyzing data regarding metabolism 
+and health because studying the realtionship between the metabolic state and
+inflammation was an important part of my PhD. The data used here is at the
+epimidiologic level because working with individual data is protected and 
+requires special permissions. However, to draw strong conclusions between the
+factors studied here, the individual data is more suited. Moreover, we do not 
+have available data for all types of cancer, and the time points are not 
+complete. Not only that, but the analysis of one only timepoint is probably not
+correct, as the timescale for the cancer development as a result of the 
+different variables here studied should be taken into account. Finally, BMI is 
+not perfect and more specific parameters may be better suited for this type of
+study.
