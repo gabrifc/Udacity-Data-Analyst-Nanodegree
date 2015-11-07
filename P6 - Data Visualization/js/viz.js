@@ -372,7 +372,7 @@ function viz(step) {
         var tip = d3.tip()
           .attr('class', 'd3-tip')
           .offset([-10, 0])
-          .html(function(d) { return "Year: " + (d.x.getUTCFullYear()+1) + "<br/> Publications: " + d.pubmed; });
+          .html(function(d) { return "Year: " + (d.x.getFullYear()) + "<br/> Publications: " + d.pubmed; });
 
         var htmlClass = ['pubmedTimelineBar'];
         // Everything on place: clean, draw the axis and the bars.
@@ -414,7 +414,7 @@ function viz(step) {
         var tip = d3.tip()
           .attr('class', 'd3-tip')
           .offset([-10, 0])
-          .html(function(d) { return "Year: " + (d.x.getUTCFullYear()+1) + "<br/> Retracted articles: " + d.y; });
+          .html(function(d) { return "Year: " + (d.x.getFullYear()) + "<br/> Retracted articles: " + d.y; });
 
         var htmlClass = ['retTimelineBar'];
         // Everything on place: clean, draw the axis and the bars.
@@ -450,7 +450,7 @@ function viz(step) {
         var tip = d3.tip()
           .attr('class', 'd3-tip')
           .offset([-10, 0])
-          .html(function(d) { return "Year: " + (d.x.getUTCFullYear()+1) + "<br/> Publications: " + d.y + "<br/> Retracted articles: " + d.z; });
+          .html(function(d) { return "Year: " + (d.x.getFullYear()) + "<br/> Publications: " + d.y + "<br/> Retracted articles: " + d.z; });
         
         // Everything on place: clean, draw the axis and the bars.
         cleanCanvas();
