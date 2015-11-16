@@ -178,7 +178,8 @@ a:visited {
   stroke: #eaeaea;
   stroke-width: 1;
 }
-.arc:hover {
+.arcSelected {
+  fill: none;
   stroke: darkRed;
   stroke-width: 2px;
   cursor:pointer;

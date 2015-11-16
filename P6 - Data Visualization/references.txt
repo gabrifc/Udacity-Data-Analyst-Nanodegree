@@ -5,3 +5,5 @@ http://bibviz.com/
 https://github.com/Caged/d3-tip
 
 normalize.css
+
+https://stackoverflow.com/questions/13595175/updating-svg-element-z-index-with-d3

@@ -220,7 +220,6 @@ function viz(step) {
         .attr("dy", "1em")
         .text(function(d) { return d.y; });
     }
-
   }
 
   function drawHorizontalBarChart(data, xScale, paddingLeft, barHeight, htmlClass) {
@@ -302,7 +301,7 @@ function viz(step) {
     }
 
     // The paths.
-    // I stole the r and ry values from bibviz.
+    // I stole the r and ry values from bibviz :/.
     var arcs = chart.append('g')
       .attr('class', 'arcs')
       .selectAll('path')
@@ -311,11 +310,20 @@ function viz(step) {
       .append('path')
       .attr('class', 'arc')
       .attr('d', function(d) { return 'M ' + xScale(d.yStart) + ',' + svgHeight + ' A '+ ((xScale(d.yEnd) - xScale(d.yStart)) * 0.51) + ',' + Math.min(((xScale(d.yEnd) - xScale(d.yStart)) * 0.51), 490) + ' 0 0,1 ' + xScale(d.yEnd) + ',' + svgHeight + ''})
-      .on('mouseover', function(d) {showInfo(d);});
+      .on('mouseover', function(d) {
+        // Redrawing the arc is cheating but works and performs better to highlight instead of sorting.
+        chart.append('path')
+          .attr('class', 'arcSelected')
+          .attr('d', d3.select(this).attr("d"));
+        // And show the tooltips
+        showInfo(d);
+      })
+      .on('mouseout', function(d) {
+        chart.select('.arcSelected').remove();
+      });
   }
 
   // Start the steps
-
   // Change the text and buttons
   textAndButtons(step);
 
@@ -372,7 +380,7 @@ function viz(step) {
         var tip = d3.tip()
           .attr('class', 'd3-tip')
           .offset([-10, 0])
-          .html(function(d) { return "Year: " + (d.x.getFullYear()) + "<br/> Publications: " + d.pubmed; });
+          .html(function(d) { return "Year: " + (d.x.getUTCFullYear()+1) + "<br/> Publications: " + d.pubmed; });
 
         var htmlClass = ['pubmedTimelineBar'];
         // Everything on place: clean, draw the axis and the bars.
@@ -414,7 +422,7 @@ function viz(step) {
         var tip = d3.tip()
           .attr('class', 'd3-tip')
           .offset([-10, 0])
-          .html(function(d) { return "Year: " + (d.x.getFullYear()) + "<br/> Retracted articles: " + d.y; });
+          .html(function(d) { return "Year: " + (d.x.getUTCFullYear()+1) + "<br/> Retracted articles: " + d.y; });
 
         var htmlClass = ['retTimelineBar'];
         // Everything on place: clean, draw the axis and the bars.
@@ -450,7 +458,7 @@ function viz(step) {
         var tip = d3.tip()
           .attr('class', 'd3-tip')
           .offset([-10, 0])
-          .html(function(d) { return "Year: " + (d.x.getFullYear()) + "<br/> Publications: " + d.y + "<br/> Retracted articles: " + d.z; });
+          .html(function(d) { return "Year: " + (d.x.getUTCFullYear()+1) + "<br/> Publications: " + d.y + "<br/> Retracted articles: " + d.z; });
         
         // Everything on place: clean, draw the axis and the bars.
         cleanCanvas();
@@ -598,6 +606,5 @@ function viz(step) {
         drawVerticalBarChart(retractions, xScale, yScale, barWidth, tip, htmlClass);
       }
     });
-
   }
 }
