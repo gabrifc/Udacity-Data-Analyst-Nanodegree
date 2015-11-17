@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title>Giants with Feets of Clay</title>
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="js/viz_1.js"></script>
+  <script src="js/d3.tip.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Giants with feet of clay</h1>
+    <h2>An analysis of biomedical misconduct</h2>
+  </header>
+  <main>
+    <div id="text-story">
+      <p class="text">From starting an irrational anti-vaccine or anti-GMO movement to causing the suicide of its authors, unfounded biomedical studies that end having to be retracted have important effects in our society. But how often and why a published article gets retracted? <strong>Let's analyze retractions in more depth.</strong></p>
+      <ul class="nav">
+        <li><a class="back text" href="#text-story" onclick="backStep()">&nbsp;</a></li>
+        <li><a class="next text" href="#text-story" onclick="nextStep()">Let's go!</a></li>
+      </ul>
+    </div>
+    <div id="viz">
+      <h3 class="chartTitle"></h3>
+      <svg viewBox="0 0 1200 375" preserveAspectRatio="xMidYMid"></svg>
+    </div>
+    <footer>
+      <p style="text-align:center; margin-bottom:20px;">Gabriel Forn-Cuní 2015</p>
+    </footer>
+  </main>
+  <script> 
+    // Create the navigation
+    var step = 0
+    function nextStep() {
+      if (step < 7) {
+      step++;
+      viz(step);
+      }
+    }
+    function backStep() {
+      if (step > 0) {
+        step--;
+        viz(step);
+      }
+    }
+  </script>
+</body>
