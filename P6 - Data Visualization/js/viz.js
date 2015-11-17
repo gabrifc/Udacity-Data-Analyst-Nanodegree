@@ -21,17 +21,17 @@ function viz(step) {
     .attr('class', 'chart');
 
   function textAndButtons(step) {
-    var stepText = ["From starting an irrational anti-vaccine or anti-GMO movement to causing the suicide of its authors, unfounded biomedical studies that end having to be retracted have important effects in our society. But how often and why a published article gets retracted? <strong>Let's analyze retractions in more depth.</strong>",
-      'Every year, hundreds of thousands of scientific articles are published and indexed in <a href="http://www.ncbi.nlm.nih.gov/pubmed" target="_blank">PubMed</a>, an online database of biomedical literature. Currently, <strong>PubMed contains information about more than 25 million articles</strong>, of which more than a million were published only in 2014.',
-      'Although all articles indexed in PubMed are <dfn title="Peer review is the evaluation of work by one or more people of similar competence to the producers of the work. (Wikipedia)">peer-reviewed</dfn> prior to publication, <strong>sometimes flawed articles end up being published. When the flaw is later discovered, the article gets retracted</strong>. <br>Since 1959, the year that the first retracted publication indexed in PubMed was published, a little more than 4000 publications have been retracted, but the rate of retractions is increasing.',
-      "That is, <strong>of 25 million of biomedical publications, only 4000 – a 0.00016% – have been proven to be flawed, and retracted</strong>. In fact, the dimensions are so divergent that to fit both numbers in a graph we have to use a logarithmic scale… which sadly distorts the comparison scales in our heads.<br>But enough of dimensions, what are the reasons for retracting an article?",
-      'According to the <a href="http://www.ala.org/acrl/sites/ala.org.acrl/files/content/conferences/confsandpreconfs/national/2011/papers/retracted_publicatio.pdf" target="_blank">Budd <i>et al.</i> (2009)</a> study, where 1,112 retracted articles were analyzed, <strong>the top reasons for article retraction are proven and presumed misconduct, unreproducibility and study errors with data or methods</strong>.<br>Unfortunately, while some of these flaws are discovered and resolved fast, others can take several months to discover.',
-      'Recently, <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0068397" target="_blank">Steen <i>et al.</i> (2013)</a> analyzed <strong>the time it takes flawed articles to retract: an average of 32.91 months</strong>, although the time-to-retraction is decreasing. As expected, the time it takes an article to be retracted depends on the nature of the retraction, among other causes.<br>You can explore the diversity in the time-to-retraction of specific articles below.',
-      'Sadly, according to Budd <i>et al.</i> (2009), <strong>retracted articles continue to be cited in a positive manner, causing irreparable damage to science and society</strong>. For example, the third retracted article with most citations is the (in)famous article by Wakefield et al linking vaccines to autism.<br/>Now is your time to learn more about the most influential biomedical retractions.'];
+    var stepText = ['<p>Biomedical research is a key factor in our fight against human diseases and aging. Hundreds of thousands of articles regarding this topic are published each year. Unfortunately, the publication pressure for funding sometimes ends with scientists publishing unfounded studies or, directly, falsifying data.</p><p>Economically, <a href="http://www.nature.com/news/irreproducible-biology-research-costs-put-at-28-billion-per-year-1.17711" target="_blank">the cost of these studies is calculated to be more than $28 billion per year on the US alone</a>. At the social level, false conclusions form scientific studies can start an irrational <a href="https://en.wikipedia.org/wiki/Andrew_Wakefield" tagert="_blank">anti-vaccine</a> or <a href="https://en.wikipedia.org/wiki/S%C3%A9ralini_affair" target="_blank">anti-GMO</a> movement.</p><p>Needless to say, when the studies are found to be flawed, they get retracted, nulling its validity. The discoveries sometimes have major consequences, such as the suicide of the authors of the study. <strong>But how often, why, and which impact have retracted articles in science?</strong></p>',
+      '<p>Every year, hundreds of thousands of scientific articles are published and indexed in <a href="http://www.ncbi.nlm.nih.gov/pubmed" target="_blank">PubMed</a>, an online database of biomedical literature. Currently, <strong>PubMed contains information about more than 25 million articles</strong>, of which more than a million were published only in 2014.</p>',
+      '<p>Although all articles indexed in PubMed are <dfn title="Peer review is the evaluation of work by one or more people of similar competence to the producers of the work. (Wikipedia)">peer-reviewed</dfn> prior to publication, sometimes flawed articles end up being published. <strong>When the flaw is later discovered, the article gets retracted</strong>. Since 1959 (first retracted publication on PubMed), just a few more than 4000 publications have been retracted but, taking into account the time it takes to retract an article, the rate of retractions is increasing in the last years.</p>',
+      "<p>That is, <strong>of 25 million of biomedical publications, only 4000 – a 0.00016% – have been proven to be flawed, and retracted</strong>. In fact, the dimensions are so divergent that to fit both numbers in a graph we have to use a logarithmic scale… which sadly distorts the comparison scales in our heads.<br>Nevertheless, articles get retracted. What are the reasons for doing so?</p>",
+      '<p>According to the <a href="http://www.ala.org/acrl/sites/ala.org.acrl/files/content/conferences/confsandpreconfs/national/2011/papers/retracted_publicatio.pdf" target="_blank">Budd <i>et al.</i> (2009)</a> study, where 1,112 retracted articles were analyzed, <strong>the top reasons for article retraction are proven and presumed misconduct, unreproducibility and study errors with data or methods</strong>.<br>While some of these flaws are discovered and resolved fast, others can take several months to discover.</p>',
+      '<p>Recently, <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0068397" target="_blank">Steen <i>et al.</i> (2013)</a> analyzed <strong>the time it takes flawed articles to retract: an average of 32.91 months</strong>, although the time-to-retraction is decreasing. Unfortunately, that is still enough time to impact science and society. As expected, the time it takes an article to be retracted depends on the nature of the retraction, among other causes. You can explore the diversity in the time-to-retraction of specific articles below.</p>',
+      '<p>Strikingly, according to Budd <i>et al.</i> (2009), <strong>retracted articles continue to be cited in a positive manner, causing irreparable damage to science and society</strong>. To finish this visualization, you can find below the retracted articles with most impact as per citation number. Some of these articles convey wrong ideas proven to be false, such as the third retracted article with most citations: the (in)famous article by Wakefield et al linking vaccines to autism.</p>'];
     // Change the text depending on the step
     d3.select('.text').html(stepText[step]);
 
-    var chartTitle = ["", 
+    var chartTitle = [" ", 
       "Number of publications indexed in PubMed per year",
       "Number of biomedical article retractions per year",
       "Comparison of biomedical articles published and retracted per year",
@@ -39,6 +39,15 @@ function viz(step) {
       "Relation of article publication and retraction times",
       "Top retracted articles with most citations"]
     d3.select('.chartTitle').html(chartTitle[step]);
+
+    var chartDetails = [" ", 
+      "Hover each bar for detailed information",
+      "Hover each bar for detailed information",
+      "Hover each bar for detailed information. Careful with the scale!",
+      "",
+      "Hover on the lines to see how much time elapsed on the retraction of the articles",
+      "Hover each bar for detailed information and click to go to the PubMed entry of the article"]
+    d3.select('.chartDetails').html(chartDetails[step]);
 
     /* Buttons for every step */
     if (step === 0) {
@@ -76,6 +85,7 @@ function viz(step) {
     d3.selectAll('.d3-tip').remove();
     d3.selectAll('.horizontalBarValue').remove();
     d3.selectAll('.horizontalBarText').remove();
+    d3.selectAll('.verticalBarValue').remove();
     // Transition all vertical bars to 0
     chart.selectAll('.verticalBar rect')
       .transition()
@@ -261,7 +271,7 @@ function viz(step) {
       .text(function(d) { return d.x; });
   }
 
-  function drawArcChart(data, xScale) {
+  function drawArcChart(data, xScale, colorScale) {
     // The info. I like it INSIDE the svg.
     var chartInfo = chart.append('g')
       .attr('class', 'chartInfo')
@@ -286,6 +296,11 @@ function viz(step) {
       chartInfo.append('text')
         .attr('class', 'arcInfoRet')
         .attr("transform", "translate(0, 80)");
+      // The months to retraction.
+      chartInfo.append('text')
+        .attr('class', 'arcInfoMonths')
+        .attr("transform", "translate(0, 100)");
+
 
     function showInfo(d) {
       d3.select('.arcInfoTitle')
@@ -298,6 +313,8 @@ function viz(step) {
         .html('<tspan style="font-weight: bold;">Published in</tspan>: ' + d.minPubDate);
       d3.select('.arcInfoRet')
         .html('<tspan style="font-weight: bold;">Retracted in</tspan>: ' + d.minRetDate);
+      d3.select('.arcInfoMonths')
+        .html('<tspan style="font-weight: bold;">Months until retraction</tspan>: ' + d.monthsToRet);
     }
 
     // The paths.
@@ -309,6 +326,8 @@ function viz(step) {
       .enter()
       .append('path')
       .attr('class', 'arc')
+      //.style('stroke', function(d) { return colorScale(d.monthsToRet);})
+      .style('stroke', function(d) { return colorScale(Math.random()*100);})
       .attr('d', function(d) { return 'M ' + xScale(d.yStart) + ',' + svgHeight + ' A '+ ((xScale(d.yEnd) - xScale(d.yStart)) * 0.51) + ',' + Math.min(((xScale(d.yEnd) - xScale(d.yStart)) * 0.51), 490) + ' 0 0,1 ' + xScale(d.yEnd) + ',' + svgHeight + ''})
       .on('mouseover', function(d) {
         // Redrawing the arc is cheating but works and performs better to highlight instead of sorting.
@@ -540,6 +559,14 @@ function viz(step) {
             .orient("bottom")
             .ticks(20);
 
+        // Color scale for the grays on the arc.
+        var colorExtent = d3.extent(retractions, function(d) {return d.monthsToRet;});
+
+        var colorScale = d3.scale.linear()
+          .range(['#f1f1f1', '#ccc'])
+          .domain([0,99]);
+          //.domain(colorExtent);
+
         // Everything on place: clean, draw the axis and the arcs.
         cleanCanvas();
 
@@ -552,7 +579,7 @@ function viz(step) {
           .call(xAxis);
 
         transitionAxis(xAxis, yAxis);
-        drawArcChart(retractions, xScale);
+        drawArcChart(retractions, xScale, colorScale);
 
       } else if (step === 6) {
         // Remap the data

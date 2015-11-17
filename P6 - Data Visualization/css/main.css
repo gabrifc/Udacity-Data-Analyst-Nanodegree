@@ -19,18 +19,24 @@ h3 {
   padding: 0;
   font-size: 10px;
 }
+.chartDetails {
+  text-align: center;
+}
 #text-story {
   font-weight: 300;
   line-height: 1.2em;
   font-size: 12px;
   padding: 20px 20px 0 20px;
   width: 100%;
-  max-width: 35em;
+  max-width: 37em;
   margin: 0 auto;
 }
 p {
   width: 100%;
   margin: 0 auto;
+}
+p + p {
+  margin: 10px auto;
 }
 .text {
   height: 165px;
@@ -65,6 +71,7 @@ a:visited {
 }
 .next {
   width: 100%;
+  margin-top: 170px!important;
 }
 .finished {
   width: 0;
@@ -72,6 +79,7 @@ a:visited {
 .next--active,
 .back--active {
   width: 50%;
+  margin-top: 0px;
 }
 .next:before,
 .next--active:before, 
@@ -175,7 +183,7 @@ a:visited {
 
 .arc {
   fill: none;
-  stroke: #eaeaea;
+  /*stroke: #eaeaea; */
   stroke-width: 1;
 }
 .arcSelected {
