@@ -43,7 +43,7 @@ Also, on the 2nd graph, the supporting text says that " little more than 4000 pu
 
 According with the feedback, I improved the arc graph giving the arc a random gray color inside a limited palette, which gives an overall better look to it without feeling overwhelming. I also made sure that the accompanying text was clearer and added a small instruction after each chart title to better explain the chart without the need for the text explanation.
 
-###Resources
+##Resources
 For this visualization, I have used the following resources:
 
 - http://bost.ocks.org/mike/ (for general d3 doubts and inspiration)
