@@ -1,7 +1,8 @@
 #P6 - Make an Effective Data Visualization
 Create a data visualization from a data set that tells a story or allows a reader to explore trends or patterns. Use either dimple.js or d3.js to create the visualization. Your work should be a reflection of the theory and practice of data visualization, such as visual encodings, design principles, and effective communication.
 
-##[View the final visualization](http://dataviz.bitsandgen.es)
+**[View the final visualization](http://dataviz.bitsandgen.es)**
+**[View the initial visualization](http://dataviz.bitsandgen.es/initial/)**
 
 ##Summary
 Biomedical research is a key factor in our fight against human diseases and aging. Hundreds of thousands of articles regarding this topic are published each year. Unfortunately, the publication pressure for funding sometimes ends with scientists publishing unfounded studies or, directly, falsifying data, with importnat scientific, economic and social consequences. In this visualization, I use data from PubMed to analyze how often, why, and which scientific impact have biomedical articles that are proven to be flawed.
